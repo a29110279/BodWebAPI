@@ -21,10 +21,7 @@ namespace BodWebAPI.Controllers
         [HttpPost("register")]
         public IActionResult Register(RegisterDto dto) 
         {
-            if (_appDbContext.Users.Any(u => u.UserName == dto.UserName)) 
-            {
-                return BadRequest("此使用者名稱已被使用");
-            }
+            
             if (_appDbContext.Users.Any(u => u.PhoneNumber == dto.PhoneNumber))
             {
                 return BadRequest("此電話號碼已被使用");
@@ -32,6 +29,10 @@ namespace BodWebAPI.Controllers
             if (_appDbContext.Users.Any(u => u.Email == dto.Email))
             {
                 return BadRequest("此電子郵件信箱已被使用");
+            }
+            if (_appDbContext.Users.Any(u => u.UserName == dto.UserName))
+            {
+                return BadRequest("此使用者名稱已被使用");
             }
 
             var user = new User
