@@ -17,17 +17,19 @@ namespace BodWebAPI.Controllers
         }
 
         [Authorize]
-        [HttpGet("private")]
+        [HttpGet("profile")]
         public IActionResult Private()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
 
             return Ok(new
             {
                 UserId = userId,
                 UserName = User.Identity!.Name,
-                UserEmail = userEmail
+                UserEmail = userEmail,
+                UserRole = userRole
             });
         }
 
