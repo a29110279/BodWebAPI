@@ -8,7 +8,7 @@ namespace BodWebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class TestController : ControllerBase
+    public class SelfController : ControllerBase
     {
         [HttpGet("public")]
         public IActionResult Public()

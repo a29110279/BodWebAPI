@@ -23,6 +23,7 @@ namespace BodWebAPI.Controllers
             _configuration = configuration;
         }
 
+        #region register
         [HttpPost("register")]
         public IActionResult Register(RegisterDto dto) 
         {
@@ -59,7 +60,9 @@ namespace BodWebAPI.Controllers
             });
 
         }
+        #endregion
 
+        #region Login
         [HttpPost("login")]
         public IActionResult Login(LoginDto dto)
         {
@@ -116,5 +119,6 @@ namespace BodWebAPI.Controllers
             });
 
         }
+        #endregion
     }
 }
