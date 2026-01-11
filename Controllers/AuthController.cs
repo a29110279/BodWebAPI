@@ -25,7 +25,7 @@ namespace BodWebAPI.Controllers
 
         #region register
         [HttpPost("register")]
-        public IActionResult Register(RegisterDto dto) 
+        public IActionResult Register([FromBody] RegisterDto dto) 
         {
             
             if (_appDbContext.Users.Any(u => u.PhoneNumber == dto.PhoneNumber))
