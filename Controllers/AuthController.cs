@@ -64,7 +64,7 @@ namespace BodWebAPI.Controllers
 
         #region Login
         [HttpPost("login")]
-        public IActionResult Login(LoginDto dto)
+        public IActionResult Login([FromBody] LoginDto dto)
         {
             var account = dto.Account.Trim();
 
@@ -96,7 +96,9 @@ namespace BodWebAPI.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.UserName ?? "Unkonwn"),
                 new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-                new Claim(ClaimTypes.Role, Enum.GetName(typeof(UserRole), user.Role)!)
+                new Claim(ClaimTypes.Role, Enum.GetName(typeof(UserRole), user.Role)!),
+                new Claim("Birthday", user.Birthday.ToString("yyyy-MM-dd")), 
+                new Claim("PhoneNumber", user.PhoneNumber ?? "")
             };
 
             var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(_configuration["JWT:Key"] ?? throw new InvalidOperationException("JWT Key 未設定")));
