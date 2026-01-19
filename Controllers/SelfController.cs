@@ -29,12 +29,7 @@ namespace BodWebAPI.Controllers
             _configuration = configuration;
         }
 
-        [HttpGet("public")]
-        public IActionResult Public()
-        {
-            return Ok("This is public");
-        }
-
+        #region 秀出個人資料
         [Authorize]
         [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         [HttpGet("profile")]
@@ -56,7 +51,9 @@ namespace BodWebAPI.Controllers
                 UserPhone = userPhone
             });
         }
+        #endregion 
 
+        #region 更新個人資料
         [Authorize]
         [HttpPut("profile")]
         public async Task<IActionResult> UpdateProfie([FromBody] UpdateProfileDto dto) 
@@ -108,7 +105,8 @@ namespace BodWebAPI.Controllers
                 new Claim(ClaimTypes.Name, user.UserName ?? "Unknown"),
                 new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
                 new Claim(ClaimTypes.Role, Enum.GetName(typeof(UserRole), user.Role)!),
-                                new Claim("PhoneNumber", user.PhoneNumber ?? "")
+                new Claim("Birthday", user.Birthday.ToString("yyyy-MM-dd")),
+                new Claim("PhoneNumber", user.PhoneNumber ?? "")
                 // 加其他你想包含的資料
             };
 
@@ -124,25 +122,64 @@ namespace BodWebAPI.Controllers
             var tokenString = new JwtSecurityTokenHandler().WriteToken(newToken);
 
 
-            //if (!string.IsNullOrWhiteSpace(dto.NewPassword))
-            //{
-            //    if (!BCrypt.Net.BCrypt.Verify(dto.OldPassword, user.PasswordHash))
-            //        return BadRequest("舊密碼錯誤");
-            //    user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
-            //}
-
             _appDbContext.Users.Update(user);
             await _appDbContext.SaveChangesAsync();
 
             return Ok(new { message = "個人資料更新成功",token = tokenString});
 
+        }
+        #endregion
+
+        [Authorize]
+        [HttpPut("Reset-Password")]
+        public async Task<IActionResult> UpdatePassword([FromBody] ResetPasswordDto dto) 
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized("無法識別使用者");
+            }
+            var user = await _appDbContext.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return NotFound("使用者不存在");
             }
 
-        [Authorize(Roles = "Admin")]
-        [HttpGet("secret")]
-        public IActionResult Secret()
-        {
-            return Ok(new { message = "你是Admin！"});
+            if (!BCrypt.Net.BCrypt.Verify(dto.OldPassword, user.PasswordHash))
+            {
+                return BadRequest("舊密碼錯誤");
+            }
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+
+
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.UserName ?? "Unknown"),
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+                new Claim(ClaimTypes.Role, Enum.GetName(typeof(UserRole), user.Role)!),
+                new Claim("Birthday", user.Birthday.ToString("yyyy-MM-dd")),
+                new Claim("PhoneNumber", user.PhoneNumber ?? "")
+                // 加其他你想包含的資料
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Key"] ?? throw new InvalidOperationException("JWT Key 未設定")));
+            var newToken = new JwtSecurityToken(
+                issuer: _configuration["JWT:Issuer"],
+                audience: _configuration["JWT:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(int.Parse(_configuration["JWT:ExpireMinutes"]!)),
+                signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
+            );
+
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(newToken);
+
+            _appDbContext.Users.Update(user);
+            await _appDbContext.SaveChangesAsync();
+
+            return Ok(new { message = "密碼修改成功", token = tokenString });
         }
     }
 }
