@@ -132,7 +132,7 @@ namespace BodWebAPI.Controllers
 
         [Authorize]
         [HttpPut("Reset-Password")]
-        public async Task<IActionResult> UpdatePassword([FromBody] ResetPasswordDto dto) 
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto) 
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
@@ -144,7 +144,14 @@ namespace BodWebAPI.Controllers
             {
                 return NotFound("使用者不存在");
             }
-
+            if (string.IsNullOrEmpty(dto.OldPassword)) 
+            {
+                return BadRequest("舊密碼未輸入");
+            }
+            else if (string.IsNullOrEmpty(dto.NewPassword))
+            {
+                return BadRequest("新密碼未輸入");
+            }
             if (!BCrypt.Net.BCrypt.Verify(dto.OldPassword, user.PasswordHash))
             {
                 return BadRequest("舊密碼錯誤");
