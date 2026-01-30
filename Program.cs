@@ -8,7 +8,7 @@ using System.Security.Claims;
 using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
-Env.Load();
+DotNetEnv.Env.Load();
 
 // 設定 DbContext 使用 SQLite
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -49,6 +49,7 @@ builder.Services.AddCors(options =>
          .AllowAnyHeader()
          .AllowAnyMethod());
 });
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
@@ -63,8 +64,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-var clientId = builder.Configuration["GOOGLE_CLIENT_ID"];
-var clientSecret = builder.Configuration["GOOGLE_CLIENT_SECRET"];
+
 app.UseCors("DevCors");
 app.UseHttpsRedirection();
 

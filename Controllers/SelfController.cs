@@ -8,7 +8,6 @@ using Microsoft.IdentityModel.Tokens.Experimental;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Net.Mail;
-using System.Text.RegularExpressions;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;

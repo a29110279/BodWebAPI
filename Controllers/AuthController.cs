@@ -18,6 +18,7 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
 using System.IO;
 using System.Threading.Tasks;
+using Google.Apis.Util.Store;
 
 namespace BodWebAPI.Controllers
 {
@@ -27,11 +28,13 @@ namespace BodWebAPI.Controllers
     {
         private readonly AppDbContext _appDbContext;
         private readonly IConfiguration _configuration;
+        private readonly IMemoryCache _cache;
 
-        public AuthController(AppDbContext appDbContext,IConfiguration configuration)
+        public AuthController(AppDbContext appDbContext,IConfiguration configuration, IMemoryCache cache)
         {
             _appDbContext = appDbContext;
             _configuration = configuration;
+            _cache = cache;
         }
 
         #region register
@@ -167,8 +170,8 @@ namespace BodWebAPI.Controllers
         {
             var clientId = _configuration["Gmail:ClientId"];
             var clientSecret = _configuration["Gmail:ClientSecret"];
-            var userEmail = _configuration["Gmail:UserEmail"];
-
+            var userEmail = "c29110279@gmail.com";
+            
             var secrets = new ClientSecrets
             {
                 ClientId = clientId,
@@ -192,7 +195,7 @@ namespace BodWebAPI.Controllers
             message.Subject = subject;
             message.Body = new TextPart("plain") { Text = body };
 
-            using var smtp = new SmtpClient();
+            using var smtp = new MailKit.Net.Smtp.SmtpClient();
             await credential.RefreshTokenAsync(CancellationToken.None);
             await smtp.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
             await smtp.AuthenticateAsync(oauth2);
