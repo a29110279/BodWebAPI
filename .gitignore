@@ -361,3 +361,12 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Google Cloud Tools for Visual Studio
+credentials.json
+token.json
+token.json/
+
+.env
+*.env
+GmailSecret.env
