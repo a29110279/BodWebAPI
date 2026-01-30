@@ -5,13 +5,15 @@ using Microsoft.EntityFrameworkCore;
 using BodWebAPI.Data;
 using System.Text;
 using System.Security.Claims;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
+Env.Load();
 
 // 設定 DbContext 使用 SQLite
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -61,7 +63,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+var clientId = builder.Configuration["GOOGLE_CLIENT_ID"];
+var clientSecret = builder.Configuration["GOOGLE_CLIENT_SECRET"];
 app.UseCors("DevCors");
 app.UseHttpsRedirection();
 
