@@ -7,6 +7,17 @@ using System.Security.Claims;
 using BCrypt.Net;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Mail;
+using Microsoft.Extensions.Caching.Memory;
+using System.Security.Cryptography;
+using System.Text;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Auth.OAuth2.Flows;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace BodWebAPI.Controllers
 {
@@ -122,5 +133,71 @@ namespace BodWebAPI.Controllers
 
         }
         #endregion
+
+        #region forgotpassword
+        [HttpPost("forgot_password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+        {
+            if (string.IsNullOrEmpty(dto.Email))
+            {
+                return BadRequest("請輸入電子郵件");
+            }
+
+            var user = _appDbContext.Users.FirstOrDefault(u => u.Email == dto.Email);
+            if (user == null)
+                return BadRequest("該電子郵件未註冊");
+
+            // 產生 6 位驗證碼
+            var code = new Random().Next(100000, 999999).ToString();
+
+            // 暫存 5 分鐘
+            var cacheKey = $"reset_code_{user.Id}";
+            _cache.Set(cacheKey, code, TimeSpan.FromMinutes(5));
+
+            // 寄信（使用 MailKit + OAuth2）
+            var subject = "BOD 網站 - 密碼重設驗證碼";
+            var body = $"您的驗證碼是：{code}\n\n有效時間：5 分鐘\n若非本人操作，請忽略此信。";
+            await SendEmailWithOAuth2Async(dto.Email, subject, body);
+
+            return Ok(new { message = "驗證碼已寄至您的電子郵件" });
+        }
+        #endregion
+
+        private async Task SendEmailWithOAuth2Async(string toEmail, string subject, string body)
+        {
+            var clientId = _configuration["Gmail:ClientId"];
+            var clientSecret = _configuration["Gmail:ClientSecret"];
+            var userEmail = _configuration["Gmail:UserEmail"];
+
+            var secrets = new ClientSecrets
+            {
+                ClientId = clientId,
+                ClientSecret = clientSecret
+            };
+
+            // OAuth2 授權流程
+            var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
+                secrets,
+                new[] { "https://mail.google.com/" },  // 完整權限
+                userEmail,
+                CancellationToken.None,
+                new FileDataStore("token.json", true)  // 儲存 token 到檔案
+            );
+
+            var oauth2 = new SaslMechanismOAuth2(userEmail, credential.Token.AccessToken);
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("BOD 網站", userEmail));
+            message.To.Add(new MailboxAddress("", toEmail));
+            message.Subject = subject;
+            message.Body = new TextPart("plain") { Text = body };
+
+            using var smtp = new SmtpClient();
+            await credential.RefreshTokenAsync(CancellationToken.None);
+            await smtp.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
+            await smtp.AuthenticateAsync(oauth2);
+            await smtp.SendAsync(message);
+            await smtp.DisconnectAsync(true);
+        }
     }
 }
